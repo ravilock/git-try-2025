@@ -1,6 +1,44 @@
+#include "./da_array.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+const int IGNORE = 0;
+const int REMOVE = 1;
+const int ADD = 2;
+const int REPLACE = 3;
+
+typedef struct {
+  int action;
+  int index;
+} str_action;
+
+void display_action(str_action action) {
+  switch (action.action) {
+  case 0:
+    printf("IGNORE ");
+    break;
+  case 1:
+    printf("REMOVE ");
+    break;
+  case 2:
+    printf("ADD ");
+    break;
+  case 3:
+    printf("REPLACE ");
+    break;
+  default:
+    printf("UNKOWN %d ", action.action);
+    exit(1);
+  }
+  printf("index %d\n", action.index);
+}
+
+typedef struct {
+  str_action *items;
+  size_t count;
+  size_t capacity;
+} str_actions;
 
 int min(int a, int b) {
   if (a < b) {
@@ -54,7 +92,8 @@ char **create_prefixes(const char *s) {
   return s_prefixes;
 }
 
-void display(int **distance_matrix, const char *a, const char *b) {
+void display_distance_matrix(int **distance_matrix, const char *a,
+                             const char *b) {
   int rows = strlen(a) + 1;
   int cols = strlen(b) + 1;
   printf("%s %s\n", a, b);
@@ -116,11 +155,12 @@ int **create_distance_matrix(const char *a, const char *b) {
       }
     }
   }
-  display(distances_matrix, a, b);
+  // display_distance_matrix(distances_matrix, a, b);
   return distances_matrix;
 }
 
 int dyn_lev(const char *a, const char *b) {
+  int cost;
   if (strlen(a) == 0) {
     return strlen(b);
   }
@@ -130,7 +170,6 @@ int dyn_lev(const char *a, const char *b) {
   int distance = 0;
   int rows = strlen(a) + 1;
   int cols = strlen(b) + 1;
-  printf("rows(%d), cols(%d)\n", rows, cols);
   int **distances = create_distance_matrix(a, b);
   int substitution_cost;
   int i = 0;
@@ -142,15 +181,19 @@ int dyn_lev(const char *a, const char *b) {
       } else {
         substitution_cost = 1;
       }
-      printf("substitution_cost: %d\n", substitution_cost);
       int ain_b = distances[i - 1][j] + 1;
       int a_bin = distances[i][j - 1] + 1;
       int in = distances[i - 1][j - 1] + substitution_cost;
-      printf("[i,j] = [%d, %d] - distances[i - 1][i - 1]: %d\n", i, j,
-             distances[i - 1][j - 1]);
-      printf("ain_b(%d), a_bin(%d), in(%d)\n", ain_b, a_bin, in);
-      distances[i][j] = min(min(ain_b, a_bin), in);
-      display(distances, a, b);
+      if (ain_b < a_bin) {
+        cost = ain_b;
+      } else {
+        cost = a_bin;
+      }
+      if (in < cost) {
+        cost = in;
+      }
+      distances[i][j] = cost;
+      // display_distance_matrix(distances, a, b);
     }
   }
   distance = distances[i - 1][j - 1];

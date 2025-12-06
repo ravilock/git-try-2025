@@ -1,3 +1,4 @@
+#include "./da_array.h"
 #include "./diff.h"
 #include <stdio.h>
 
@@ -53,6 +54,15 @@ int main(int argc, char **argv) {
   printf("dyn_lev(abcd, abe) = %d\n", distance);
   distance = lev("abcd", "abe");
   printf("lev(abcd, abe) = %d\n", distance);
+  printf("---------------\n");
+  printf("---------------\n");
+  printf("---------------\n");
+  printf("---------------\n");
+
+  distance = dyn_lev("apple", "dalped");
+  printf("dyn_lev(apple, dalped) = %d\n", distance);
+  distance = lev("apple", "dalped");
+  printf("lev(apple, dalped) = %d\n", distance);
   printf("---------------\n");
   printf("---------------\n");
   printf("---------------\n");
