@@ -48,47 +48,112 @@ char **create_prefixes(const char *s) {
       exit(69);
     }
     strcpy(s_copy, s);
-    s_copy[s_len - i] = '\0';
+    s_copy[i + 1] = '\0';
     s_prefixes[i] = s_copy;
   }
   return s_prefixes;
 }
 
-int dyn_lev(const char *a, const char *b) {
-  int distance = 0;
+void display(int **distance_matrix, const char *a, const char *b) {
+  int rows = strlen(a) + 1;
+  int cols = strlen(b) + 1;
+  printf("%s %s\n", a, b);
+  printf("______________start\n");
+  printf("- - ");
+  for (int j = 0; j < cols - 1; j++) {
+    printf("%c ", b[j]);
+  }
+  printf("\n");
+  for (int i = 0; i < rows; i++) {
+    if (i == 0) {
+      printf("- ");
+    } else {
+      printf("%c ", a[i - 1]);
+    }
+    for (int j = 0; j < cols; j++) {
+      printf("%d ", distance_matrix[i][j]);
+    }
+    printf("\n");
+  }
+  printf("______________end\n");
+}
+
+// a: abz
+// b: xy
+//
+// result:
+// - - x y
+// - 0 1 2
+// a 1 0 0
+// b 2 0 0
+// z 3 0 0
+
+//
+int **create_distance_matrix(const char *a, const char *b) {
+  int **distances_matrix;
+  int *distances;
   int a_len = strlen(a);
   int b_len = strlen(b);
-  char **a_prefixes = create_prefixes(a);
-  char **b_prefixes = create_prefixes(b);
-  int ai = 0;
-  int aj = 0;
-  int bi = 0;
-  int bj = 0;
-
-  while (1) {
-    char *a_s = a_prefixes[ai];
-    char *b_s = b_prefixes[bi];
-    if (a_s[aj] == b_s[bj]) {
-      aj++;
-      bj++;
-    } else {
-      ai++;
-      aj = 0;
-      bj = 0;
-      continue;
+  distances_matrix = malloc(sizeof(int *) * (a_len + 1));
+  if (distances_matrix == NULL) {
+    printf("distances_matrix is NULL\n");
+    exit(69);
+  }
+  for (int i = 0; i < (a_len + 1); i++) {
+    int *distances = malloc(sizeof(int) * (b_len + 1));
+    if (distances == NULL) {
+      printf("distances is NULL\n");
+      exit(69);
     }
-    if (a_s[aj] == '\0') {
-      free(a_prefixes);
-      free(b_prefixes);
-      return distance + strlen(&b_s[bj]);
-    }
-    if (b_s[bj] == '\0') {
-      free(a_prefixes);
-      free(b_prefixes);
-      return distance + strlen(&a_s[aj]);
+    distances_matrix[i] = distances;
+    for (int j = 0; j < (b_len + 1); j++) {
+      if (i == 0) {
+        distances_matrix[0][j] = j;
+      } else if (j == 0) {
+        distances_matrix[i][0] = i;
+      } else {
+        distances_matrix[i][j] = 0;
+      }
     }
   }
-  free(a_prefixes);
-  free(b_prefixes);
+  display(distances_matrix, a, b);
+  return distances_matrix;
+}
+
+int dyn_lev(const char *a, const char *b) {
+  if (strlen(a) == 0) {
+    return strlen(b);
+  }
+  if (strlen(b) == 0) {
+    return strlen(a);
+  }
+  int distance = 0;
+  int rows = strlen(a) + 1;
+  int cols = strlen(b) + 1;
+  printf("rows(%d), cols(%d)\n", rows, cols);
+  int **distances = create_distance_matrix(a, b);
+  int substitution_cost;
+  int i = 0;
+  int j = 0;
+  for (j = 1; j < cols; j++) {
+    for (i = 1; i < rows; i++) {
+      if (a[i - 1] == b[j - 1]) {
+        substitution_cost = 0;
+      } else {
+        substitution_cost = 1;
+      }
+      printf("substitution_cost: %d\n", substitution_cost);
+      int ain_b = distances[i - 1][j] + 1;
+      int a_bin = distances[i][j - 1] + 1;
+      int in = distances[i - 1][j - 1] + substitution_cost;
+      printf("[i,j] = [%d, %d] - distances[i - 1][i - 1]: %d\n", i, j,
+             distances[i - 1][j - 1]);
+      printf("ain_b(%d), a_bin(%d), in(%d)\n", ain_b, a_bin, in);
+      distances[i][j] = min(min(ain_b, a_bin), in);
+      display(distances, a, b);
+    }
+  }
+  distance = distances[i - 1][j - 1];
+  free(distances);
   return distance;
 }
