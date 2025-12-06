@@ -3,36 +3,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-const int IGNORE = 0;
-const int REMOVE = 1;
-const int ADD = 2;
-const int REPLACE = 3;
+const char IGNORE = 'I';
+const char REMOVE = 'R';
+const char ADD = 'A';
+const char SUBSTITUTE = 'S';
 
 typedef struct {
-  int action;
+  char action;
   int index;
 } str_action;
-
-void display_action(str_action action) {
-  switch (action.action) {
-  case 0:
-    printf("IGNORE ");
-    break;
-  case 1:
-    printf("REMOVE ");
-    break;
-  case 2:
-    printf("ADD ");
-    break;
-  case 3:
-    printf("REPLACE ");
-    break;
-  default:
-    printf("UNKOWN %d ", action.action);
-    exit(1);
-  }
-  printf("index %d\n", action.index);
-}
 
 typedef struct {
   str_action *items;
@@ -40,77 +19,36 @@ typedef struct {
   size_t capacity;
 } str_actions;
 
-int min(int a, int b) {
-  if (a < b) {
-    return a;
-  }
-  return b;
-}
+typedef struct {
+  int distance;
+  str_action str_action;
+} lev_distance;
 
-int lev(const char *a, const char *b) {
-  int a_len = strlen(a);
-  int b_len = strlen(b);
-  if (b_len == 0) {
-    return a_len;
-  }
-  if (a_len == 0) {
-    return b_len;
-  }
-  if (a[0] == b[0]) {
-    return lev(++a, ++b);
-  }
-  int atail_b = lev(a + 1, b);
-  int a_btail = lev(a, b + 1);
-  int tails = lev(a + 1, b + 1);
-  return 1 + min(min(atail_b, a_btail), tails);
-}
-
-int sum_sequence(int a, int b) {
-  int pair_sum = (a + b);
-  return (pair_sum * (b - a + 1)) / 2;
-}
-
-char **create_prefixes(const char *s) {
-  int s_len = strlen(s);
-  char **s_prefixes;
-  char *s_copy;
-  s_prefixes = malloc(s_len * sizeof(char));
-  if (s_prefixes == NULL) {
-    printf("s_prefixes is NULL\n");
-    exit(69);
-  }
-  for (int i = 0; i < s_len; i++) {
-    s_copy = malloc((s_len + 1) * sizeof(char));
-    if (s_copy == NULL) {
-      printf("s_copy is NULL\n");
-      exit(69);
-    }
-    strcpy(s_copy, s);
-    s_copy[i + 1] = '\0';
-    s_prefixes[i] = s_copy;
-  }
-  return s_prefixes;
-}
-
-void display_distance_matrix(int **distance_matrix, const char *a,
-                             const char *b) {
+void display_lev_distance_matrix(lev_distance **distance_matrix, const char *a,
+                                 const char *b) {
   int rows = strlen(a) + 1;
   int cols = strlen(b) + 1;
   printf("%s %s\n", a, b);
   printf("______________start\n");
-  printf("- - ");
+  printf("-     ");
+  printf("-     ");
   for (int j = 0; j < cols - 1; j++) {
-    printf("%c ", b[j]);
+    printf("%c     ", b[j]);
   }
   printf("\n");
   for (int i = 0; i < rows; i++) {
     if (i == 0) {
-      printf("- ");
+      printf("-     ");
     } else {
-      printf("%c ", a[i - 1]);
+      printf("%c     ", a[i - 1]);
     }
     for (int j = 0; j < cols; j++) {
-      printf("%d ", distance_matrix[i][j]);
+      printf("%d ", distance_matrix[i][j].distance);
+      if (distance_matrix[i][j].str_action.action != '\0') {
+        printf("(%c) ", distance_matrix[i][j].str_action.action);
+      } else {
+        printf("(%c) ", IGNORE);
+      }
     }
     printf("\n");
   }
@@ -128,18 +66,18 @@ void display_distance_matrix(int **distance_matrix, const char *a,
 // z 3 0 0
 
 //
-int **create_distance_matrix(const char *a, const char *b) {
-  int **distances_matrix;
+lev_distance **create_distance_matrix(const char *a, const char *b) {
+  lev_distance **distances_matrix;
   int *distances;
   int a_len = strlen(a);
   int b_len = strlen(b);
-  distances_matrix = malloc(sizeof(int *) * (a_len + 1));
+  distances_matrix = malloc(sizeof(lev_distance *) * (a_len + 1));
   if (distances_matrix == NULL) {
     printf("distances_matrix is NULL\n");
     exit(69);
   }
   for (int i = 0; i < (a_len + 1); i++) {
-    int *distances = malloc(sizeof(int) * (b_len + 1));
+    lev_distance *distances = malloc(sizeof(lev_distance) * (b_len + 1));
     if (distances == NULL) {
       printf("distances is NULL\n");
       exit(69);
@@ -147,20 +85,20 @@ int **create_distance_matrix(const char *a, const char *b) {
     distances_matrix[i] = distances;
     for (int j = 0; j < (b_len + 1); j++) {
       if (i == 0) {
-        distances_matrix[0][j] = j;
+        distances_matrix[0][j].distance = j;
       } else if (j == 0) {
-        distances_matrix[i][0] = i;
+        distances_matrix[i][0].distance = i;
       } else {
-        distances_matrix[i][j] = 0;
+        distances_matrix[i][j].distance = 0;
       }
     }
   }
-  // display_distance_matrix(distances_matrix, a, b);
   return distances_matrix;
 }
 
-int dyn_lev(const char *a, const char *b) {
+int lev(const char *a, const char *b) {
   int cost;
+  str_action used_action;
   if (strlen(a) == 0) {
     return strlen(b);
   }
@@ -170,7 +108,7 @@ int dyn_lev(const char *a, const char *b) {
   int distance = 0;
   int rows = strlen(a) + 1;
   int cols = strlen(b) + 1;
-  int **distances = create_distance_matrix(a, b);
+  lev_distance **distances = create_distance_matrix(a, b);
   int substitution_cost;
   int i = 0;
   int j = 0;
@@ -181,22 +119,31 @@ int dyn_lev(const char *a, const char *b) {
       } else {
         substitution_cost = 1;
       }
-      int ain_b = distances[i - 1][j] + 1;
-      int a_bin = distances[i][j - 1] + 1;
-      int in = distances[i - 1][j - 1] + substitution_cost;
+      int ain_b = distances[i - 1][j].distance + 1; // REMOVE
+      int a_bin = distances[i][j - 1].distance + 1; // ADD
+      int in =
+          distances[i - 1][j - 1].distance + substitution_cost; // SUBSTITUTE
       if (ain_b < a_bin) {
         cost = ain_b;
+        used_action.action = REMOVE;
       } else {
         cost = a_bin;
+        used_action.action = ADD;
       }
       if (in < cost) {
         cost = in;
+        if (substitution_cost == 1) {
+          used_action.action = SUBSTITUTE;
+        } else {
+          used_action.action = IGNORE;
+        }
       }
-      distances[i][j] = cost;
-      // display_distance_matrix(distances, a, b);
+      distances[i][j].distance = cost;
+      distances[i][j].str_action = used_action;
     }
   }
-  distance = distances[i - 1][j - 1];
+  display_lev_distance_matrix(distances, a, b);
+  distance = distances[i - 1][j - 1].distance;
   free(distances);
   return distance;
 }
