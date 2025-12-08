@@ -1,3 +1,5 @@
+#include <stddef.h>
+
 #define IGNORE 'I'
 #define REMOVE 'R'
 #define ADD 'A'
@@ -6,6 +8,12 @@
 typedef struct {
   int distance;
   char action;
+} lev_char_distance;
+
+typedef struct {
+  size_t rows;
+  size_t cols;
+  lev_char_distance **matrix;
 } lev_distance;
 
-lev_distance **lev(const char *a, const char *b);
+lev_distance *lev(const char *a, const char *b);

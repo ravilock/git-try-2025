@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 int main(int argc, char **argv) {
-  lev_distance **distance = 0;
+  lev_distance *distance = 0;
   distance = lev("abc", "xy");
   printf("lev(abc, xy)\n");
   free(distance);
