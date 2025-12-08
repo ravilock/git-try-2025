@@ -1,35 +1,14 @@
+#include "./diff.h"
 #include "./da_array.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-const char IGNORE = 'I';
-const char REMOVE = 'R';
-const char ADD = 'A';
-const char SUBSTITUTE = 'S';
-
-typedef struct {
-  char action;
-  int index;
-} str_action;
-
-typedef struct {
-  str_action *items;
-  size_t count;
-  size_t capacity;
-} str_actions;
-
-typedef struct {
-  int distance;
-  str_action str_action;
-} lev_distance;
-
 void display_lev_distance_matrix(lev_distance **distance_matrix, const char *a,
                                  const char *b) {
   int rows = strlen(a) + 1;
   int cols = strlen(b) + 1;
-  printf("%s %s\n", a, b);
-  printf("______________start\n");
+  printf("---------------\n");
   printf("-     ");
   printf("-     ");
   for (int j = 0; j < cols - 1; j++) {
@@ -44,15 +23,15 @@ void display_lev_distance_matrix(lev_distance **distance_matrix, const char *a,
     }
     for (int j = 0; j < cols; j++) {
       printf("%d ", distance_matrix[i][j].distance);
-      if (distance_matrix[i][j].str_action.action != '\0') {
-        printf("(%c) ", distance_matrix[i][j].str_action.action);
+      if (distance_matrix[i][j].action != '\0') {
+        printf("(%c) ", distance_matrix[i][j].action);
       } else {
-        printf("(%c) ", IGNORE);
+        printf("(?) ");
       }
     }
     printf("\n");
   }
-  printf("______________end\n");
+  printf("---------------\n");
 }
 
 // a: abz
@@ -84,66 +63,56 @@ lev_distance **create_distance_matrix(const char *a, const char *b) {
     }
     distances_matrix[i] = distances;
     for (int j = 0; j < (b_len + 1); j++) {
-      if (i == 0) {
-        distances_matrix[0][j].distance = j;
-      } else if (j == 0) {
-        distances_matrix[i][0].distance = i;
-      } else {
+      if (i == 0 && j == 0) {
         distances_matrix[i][j].distance = 0;
+        distances_matrix[i][j].action = IGNORE;
+      } else if (i == 0) {
+        distances_matrix[i][j].distance = j;
+        distances_matrix[i][j].action = ADD;
+      } else if (j == 0) {
+        distances_matrix[i][j].distance = i;
+        distances_matrix[i][j].action = ADD;
       }
     }
   }
+  display_lev_distance_matrix(distances_matrix, a, b);
   return distances_matrix;
 }
 
-int lev(const char *a, const char *b) {
-  int cost;
-  str_action used_action;
-  if (strlen(a) == 0) {
-    return strlen(b);
-  }
-  if (strlen(b) == 0) {
-    return strlen(a);
-  }
-  int distance = 0;
+lev_distance **lev(const char *a, const char *b) {
+  int cost, substitution_probe_cost, add_cost, remove_cost, substitution_cost;
   int rows = strlen(a) + 1;
   int cols = strlen(b) + 1;
   lev_distance **distances = create_distance_matrix(a, b);
-  int substitution_cost;
-  int i = 0;
-  int j = 0;
-  for (j = 1; j < cols; j++) {
-    for (i = 1; i < rows; i++) {
+  for (int j = 1; j < cols; j++) {
+    for (int i = 1; i < rows; i++) {
       if (a[i - 1] == b[j - 1]) {
-        substitution_cost = 0;
+        substitution_probe_cost = 0;
       } else {
-        substitution_cost = 1;
+        substitution_probe_cost = 1;
       }
-      int ain_b = distances[i - 1][j].distance + 1; // REMOVE
-      int a_bin = distances[i][j - 1].distance + 1; // ADD
-      int in =
-          distances[i - 1][j - 1].distance + substitution_cost; // SUBSTITUTE
-      if (ain_b < a_bin) {
-        cost = ain_b;
-        used_action.action = REMOVE;
+      remove_cost = distances[i - 1][j].distance + 1; // REMOVE
+      add_cost = distances[i][j - 1].distance + 1;    // ADD
+      substitution_cost = substitution_probe_cost +
+                          distances[i - 1][j - 1].distance; // SUBSTITUTE
+      if (remove_cost < add_cost) {
+        cost = remove_cost;
+        distances[i][j].action = REMOVE;
       } else {
-        cost = a_bin;
-        used_action.action = ADD;
+        cost = add_cost;
+        distances[i][j].action = ADD;
       }
-      if (in < cost) {
-        cost = in;
-        if (substitution_cost == 1) {
-          used_action.action = SUBSTITUTE;
+      if (substitution_cost < cost) {
+        cost = substitution_cost;
+        if (substitution_probe_cost == 1) {
+          distances[i][j].action = SUBSTITUTE;
         } else {
-          used_action.action = IGNORE;
+          distances[i][j].action = IGNORE;
         }
       }
       distances[i][j].distance = cost;
-      distances[i][j].str_action = used_action;
     }
   }
   display_lev_distance_matrix(distances, a, b);
-  distance = distances[i - 1][j - 1].distance;
-  free(distances);
-  return distance;
+  return distances;
 }
