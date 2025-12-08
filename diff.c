@@ -43,33 +43,31 @@ void display_lev_distance_matrix(lev_distance *distance, const char *a,
 // z 3 0 0
 
 //
-lev_distance *create_distance_matrix(const char *a, const char *b) {
+lev_distance *create_lev_distance_matrix(const char *a, const char *b) {
   lev_distance *distance;
   lev_char_distance **matrix;
   lev_char_distance *distances;
-  size_t a_len = strlen(a);
-  size_t b_len = strlen(b);
   distance = malloc(sizeof(lev_distance));
   if (distance == NULL) {
     printf("distance is NULL\n");
     exit(69);
   }
-  distance->rows = a_len + 1;
-  distance->cols = b_len + 1;
-  matrix = malloc(sizeof(lev_char_distance *) * (a_len + 1));
+  distance->rows = strlen(a) + 1;
+  distance->cols = strlen(b) + 1;
+  matrix = malloc(sizeof(lev_char_distance *) * (distance->rows));
   if (matrix == NULL) {
     printf("distances_matrix is NULL\n");
     exit(69);
   }
   distance->matrix = matrix;
-  for (size_t i = 0; i < (a_len + 1); i++) {
-    distances = malloc(sizeof(lev_char_distance) * (b_len + 1));
+  for (size_t i = 0; i < (distance->rows); i++) {
+    distances = malloc(sizeof(lev_char_distance) * (distance->cols));
     if (distances == NULL) {
       printf("distances is NULL\n");
       exit(69);
     }
     matrix[i] = distances;
-    for (size_t j = 0; j < (b_len + 1); j++) {
+    for (size_t j = 0; j < (distance->cols); j++) {
       if (i == 0 && j == 0) {
         matrix[i][j].distance = 0;
         matrix[i][j].action = IGNORE;
@@ -85,14 +83,23 @@ lev_distance *create_distance_matrix(const char *a, const char *b) {
   return distance;
 }
 
+void display_dyn_lev_char_distance(dyn_lev_char_distance *distances) {
+  printf("count: %zu, capacity: %zu\n", distances->count, distances->capacity);
+  for (size_t i = 0; i < distances->count; i++) {
+    printf("(%d, %c) - ", distances->items[i].distance,
+           distances->items[i].action);
+  }
+  printf("\n");
+}
+
+// returns a matrix representing the levenshtein distance between 'a' and 'b'
+// 'b' can not be an empty string
 lev_distance *lev(const char *a, const char *b) {
   int cost, substitution_probe_cost, add_cost, remove_cost, substitution_cost;
-  size_t rows = strlen(a) + 1;
-  size_t cols = strlen(b) + 1;
-  lev_distance *distances = create_distance_matrix(a, b);
+  lev_distance *distances = create_lev_distance_matrix(a, b);
   display_lev_distance_matrix(distances, a, b);
-  for (size_t j = 1; j < cols; j++) {
-    for (size_t i = 1; i < rows; i++) {
+  for (size_t j = 1; j < distances->cols; j++) {
+    for (size_t i = 1; i < distances->rows; i++) {
       if (a[i - 1] == b[j - 1]) {
         substitution_probe_cost = 0;
       } else {
@@ -125,4 +132,49 @@ lev_distance *lev(const char *a, const char *b) {
   return distances;
 }
 
-void lev_trackdiff(lev_char_distance **matrix) {}
+void lev_trackdiff(lev_distance *distance) {
+  dyn_lev_char_distance *lev_track = malloc(sizeof(dyn_lev_char_distance));
+  if (lev_track == NULL) {
+    printf("lev_track is NULL\n");
+    exit(69);
+  }
+  dyn_lev_char_distance *rev_lev_track = malloc(sizeof(dyn_lev_char_distance));
+  if (rev_lev_track == NULL) {
+    printf("rev_lev_track is NULL\n");
+    exit(69);
+  }
+  size_t rows = distance->rows;
+  size_t cols = distance->cols;
+  lev_char_distance current_char_distance;
+  do {
+    printf("i: %zu, j: %zu\n", rows - 1, cols - 1);
+    if (rows == 1 && cols == 1)
+      break;
+    if (rows < 1 || cols < 1) {
+      break;
+    }
+    printf("lev: %d, act: %c\n", distance->matrix[rows - 1][cols - 1].distance,
+           distance->matrix[rows - 1][cols - 1].action);
+    current_char_distance = distance->matrix[rows - 1][cols - 1];
+    switch (current_char_distance.action) {
+    case IGNORE:
+      rows--;
+      cols--;
+      break;
+    case SUBSTITUTE:
+      rows--;
+      cols--;
+      break;
+    case REMOVE:
+      rows--;
+      break;
+    case ADD:
+      cols--;
+      break;
+    }
+    da_append(rev_lev_track, current_char_distance);
+  } while (1);
+  display_dyn_lev_char_distance(rev_lev_track);
+  da_revert(rev_lev_track, lev_track);
+  display_dyn_lev_char_distance(lev_track);
+}

@@ -26,3 +26,10 @@
     }                                                                          \
     xs->items[xs->count++] = x;                                                \
   } while (0)
+
+#define da_revert(src, dst)                                                    \
+  do {                                                                         \
+    for (size_t i = 0; i < src->count; i++) {                                  \
+      da_append(dst, src->items[src->count - i - 1]);                          \
+    }                                                                          \
+  } while (0)
