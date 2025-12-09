@@ -76,7 +76,7 @@ lev_distance *create_lev_distance_matrix(const char *a, const char *b) {
         matrix[i][j].action = ADD;
       } else if (j == 0) {
         matrix[i][j].distance = i;
-        matrix[i][j].action = ADD;
+        matrix[i][j].action = REMOVE;
       } else {
         matrix[i][j].distance = 0;
       }
@@ -97,7 +97,7 @@ void display_dyn_lev_char_distance(dyn_lev_char_distance *distances) {
 // returns a matrix representing the levenshtein distance between 'a' and 'b'
 // 'b' can not be an empty string
 lev_distance *lev(const char *a, const char *b) {
-  int cost, substitution_probe_cost, add_cost, remove_cost, substitution_cost;
+  int add_cost, remove_cost, substitute_cost;
   lev_distance *distances = create_lev_distance_matrix(a, b);
 #ifdef LEV_TRACE
   display_lev_distance_matrix(distances, a, b);
@@ -105,31 +105,28 @@ lev_distance *lev(const char *a, const char *b) {
   for (size_t j = 1; j < distances->cols; j++) {
     for (size_t i = 1; i < distances->rows; i++) {
       if (a[i - 1] == b[j - 1]) {
-        substitution_probe_cost = 0;
-      } else {
-        substitution_probe_cost = 1;
+        distances->matrix[i][j].distance =
+            distances->matrix[i - 1][j - 1].distance;
+        distances->matrix[i][j].action = IGNORE;
+        continue;
       }
-      remove_cost = distances->matrix[i - 1][j].distance + 1; // REMOVE
-      add_cost = distances->matrix[i][j - 1].distance + 1;    // ADD
-      substitution_cost =
-          substitution_probe_cost +
-          distances->matrix[i - 1][j - 1].distance; // SUBSTITUTE
-      if (remove_cost < add_cost) {
-        cost = remove_cost;
-        distances->matrix[i][j].action = REMOVE;
-      } else {
-        cost = add_cost;
+
+      remove_cost = distances->matrix[i - 1][j].distance;         // REMOVE
+      add_cost = distances->matrix[i][j - 1].distance;            // ADD
+      substitute_cost = distances->matrix[i - 1][j - 1].distance; // SUBSTITUTE
+
+      distances->matrix[i][j].distance = remove_cost;
+      distances->matrix[i][j].action = REMOVE;
+      if (distances->matrix[i][j].distance > add_cost) {
+        distances->matrix[i][j].distance = add_cost;
         distances->matrix[i][j].action = ADD;
       }
-      if (substitution_cost < cost) {
-        cost = substitution_cost;
-        if (substitution_probe_cost == 1) {
-          distances->matrix[i][j].action = SUBSTITUTE;
-        } else {
-          distances->matrix[i][j].action = IGNORE;
-        }
+      if (distances->matrix[i][j].distance > substitute_cost) {
+        distances->matrix[i][j].distance = substitute_cost;
+        distances->matrix[i][j].action = SUBSTITUTE;
       }
-      distances->matrix[i][j].distance = cost;
+
+      distances->matrix[i][j].distance++;
     }
   }
 #ifdef LEV_TRACE
@@ -139,6 +136,7 @@ lev_distance *lev(const char *a, const char *b) {
 }
 
 dyn_lev_char_distance *lev_trackdiff(lev_distance *distance) {
+  lev_char_distance current_char_distance;
   dyn_lev_char_distance *lev_track = malloc(sizeof(dyn_lev_char_distance));
   if (lev_track == NULL) {
     printf("lev_track is NULL\n");
@@ -149,22 +147,15 @@ dyn_lev_char_distance *lev_trackdiff(lev_distance *distance) {
     printf("rev_lev_track is NULL\n");
     exit(69);
   }
-  size_t rows = distance->rows;
-  size_t cols = distance->cols;
-  lev_char_distance current_char_distance;
-  do {
-    if (rows == 1 && cols == 1)
-      break;
-    if (rows < 1 || cols < 1) {
-      break;
-    }
-    current_char_distance = distance->matrix[rows - 1][cols - 1];
+  int rows = distance->rows - 1;
+  int cols = distance->cols - 1;
+
+  while (rows > 0 || cols > 0) {
+    current_char_distance = distance->matrix[rows][cols];
     switch (current_char_distance.action) {
     case IGNORE:
       rows--;
-      if (distance->cols > 2) {
-        cols--;
-      }
+      cols--;
       break;
     case SUBSTITUTE:
       rows--;
@@ -176,9 +167,12 @@ dyn_lev_char_distance *lev_trackdiff(lev_distance *distance) {
     case ADD:
       cols--;
       break;
+    default:
+      printf("Unreachable\n");
+      exit(1);
     }
     da_append(rev_lev_track, current_char_distance);
-  } while (1);
+  }
   da_revert(rev_lev_track, lev_track);
 #ifdef LEV_TRACE
   display_dyn_lev_char_distance(lev_track);
