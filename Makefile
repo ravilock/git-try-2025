@@ -1,7 +1,7 @@
 CC=gcc
 
 build:
-	$(CC) -o main main.c diff.c
+	$(CC) -o main -Wall main.c diff.c
 
 debug:
-	$(CC) -DLEV_TRACE -g -o main main.c diff.c
+	$(CC) -DLEV_TRACE -g -o main -Wall  main.c diff.c

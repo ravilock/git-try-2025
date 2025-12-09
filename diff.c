@@ -85,15 +85,6 @@ lev_distance *create_lev_distance_matrix(const char *a, const char *b) {
   return distance;
 }
 
-void display_dyn_lev_char_distance(dyn_lev_char_distance *distances) {
-  printf("count: %zu, capacity: %zu\n", distances->count, distances->capacity);
-  for (size_t i = 0; i < distances->count; i++) {
-    printf("(%d, %c) - ", distances->items[i].distance,
-           distances->items[i].action);
-  }
-  printf("\n");
-}
-
 // returns a matrix representing the levenshtein distance between 'a' and 'b'
 // 'b' can not be an empty string
 lev_distance *lev(const char *a, const char *b) {
@@ -135,85 +126,56 @@ lev_distance *lev(const char *a, const char *b) {
   return distances;
 }
 
-dyn_lev_char_distance *lev_trackdiff(lev_distance *distance) {
+str_diff *diff(const char *a, const char *b) {
+  char_diff cdiff;
   lev_char_distance current_char_distance;
-  dyn_lev_char_distance *lev_track = malloc(sizeof(dyn_lev_char_distance));
-  if (lev_track == NULL) {
-    printf("lev_track is NULL\n");
-    exit(69);
-  }
-  dyn_lev_char_distance *rev_lev_track = malloc(sizeof(dyn_lev_char_distance));
-  if (rev_lev_track == NULL) {
-    printf("rev_lev_track is NULL\n");
-    exit(69);
-  }
+  lev_distance *distance = lev(a, b);
   int rows = distance->rows - 1;
   int cols = distance->cols - 1;
-
-  while (rows > 0 || cols > 0) {
-    current_char_distance = distance->matrix[rows][cols];
-    switch (current_char_distance.action) {
-    case IGNORE:
-      rows--;
-      cols--;
-      break;
-    case SUBSTITUTE:
-      rows--;
-      cols--;
-      break;
-    case REMOVE:
-      rows--;
-      break;
-    case ADD:
-      cols--;
-      break;
-    default:
-      printf("Unreachable\n");
-      exit(1);
-    }
-    da_append(rev_lev_track, current_char_distance);
+  str_diff *rev_diff_result = malloc(sizeof(str_diff));
+  if (rev_diff_result == NULL) {
+    printf("rev_diff_result is NULL\n");
+    exit(69);
   }
-  da_revert(rev_lev_track, lev_track);
-#ifdef LEV_TRACE
-  display_dyn_lev_char_distance(lev_track);
-#endif
-  return lev_track;
-}
-
-str_diff *diff(const char *a, const char *b) {
-  lev_char_distance char_distance;
-  char_diff cdiff;
-  size_t a_len = strlen(a);
-  size_t b_len = strlen(b);
-  lev_distance *distance = lev(a, b);
-  dyn_lev_char_distance *lev_track = lev_trackdiff(distance);
   str_diff *diff_result = malloc(sizeof(str_diff));
   if (diff_result == NULL) {
     printf("diff_result is NULL\n");
     exit(69);
   }
-  for (size_t i = 0; i < lev_track->count; i++) {
-    cdiff.action = lev_track->items[i].action;
-    switch (cdiff.action) {
+
+  while (rows > 0 || cols > 0) {
+    current_char_distance = distance->matrix[rows][cols];
+    cdiff.action = current_char_distance.action;
+    switch (current_char_distance.action) {
     case IGNORE:
-      cdiff.from = a[i];
+      rows--;
+      cols--;
+      cdiff.from = a[rows];
       cdiff.to = 0;
       break;
     case SUBSTITUTE:
-      cdiff.from = a[i];
-      cdiff.to = b[i];
+      rows--;
+      cols--;
+      cdiff.from = a[rows];
+      cdiff.to = b[cols];
       break;
     case REMOVE:
-      cdiff.from = a[i];
+      rows--;
+      cdiff.from = a[rows];
       cdiff.to = 0;
       break;
     case ADD:
+      cols--;
+      cdiff.to = b[cols];
       cdiff.from = 0;
-      cdiff.to = b[i];
       break;
+    default:
+      printf("Unreachable\n");
+      exit(1);
     }
-    da_append(diff_result, cdiff);
+    da_append(rev_diff_result, cdiff);
   }
+  da_revert(rev_diff_result, diff_result);
   return diff_result;
 }
 
