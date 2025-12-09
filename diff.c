@@ -77,6 +77,8 @@ lev_distance *create_lev_distance_matrix(const char *a, const char *b) {
       } else if (j == 0) {
         matrix[i][j].distance = i;
         matrix[i][j].action = ADD;
+      } else {
+        matrix[i][j].distance = 0;
       }
     }
   }
@@ -97,7 +99,9 @@ void display_dyn_lev_char_distance(dyn_lev_char_distance *distances) {
 lev_distance *lev(const char *a, const char *b) {
   int cost, substitution_probe_cost, add_cost, remove_cost, substitution_cost;
   lev_distance *distances = create_lev_distance_matrix(a, b);
+#ifdef LEV_TRACE
   display_lev_distance_matrix(distances, a, b);
+#endif
   for (size_t j = 1; j < distances->cols; j++) {
     for (size_t i = 1; i < distances->rows; i++) {
       if (a[i - 1] == b[j - 1]) {
@@ -128,7 +132,9 @@ lev_distance *lev(const char *a, const char *b) {
       distances->matrix[i][j].distance = cost;
     }
   }
+#ifdef LEV_TRACE
   display_lev_distance_matrix(distances, a, b);
+#endif
   return distances;
 }
 
@@ -147,19 +153,18 @@ dyn_lev_char_distance *lev_trackdiff(lev_distance *distance) {
   size_t cols = distance->cols;
   lev_char_distance current_char_distance;
   do {
-    printf("i: %zu, j: %zu\n", rows - 1, cols - 1);
     if (rows == 1 && cols == 1)
       break;
     if (rows < 1 || cols < 1) {
       break;
     }
-    printf("lev: %d, act: %c\n", distance->matrix[rows - 1][cols - 1].distance,
-           distance->matrix[rows - 1][cols - 1].action);
     current_char_distance = distance->matrix[rows - 1][cols - 1];
     switch (current_char_distance.action) {
     case IGNORE:
       rows--;
-      cols--;
+      if (distance->cols > 2) {
+        cols--;
+      }
       break;
     case SUBSTITUTE:
       rows--;
@@ -175,7 +180,9 @@ dyn_lev_char_distance *lev_trackdiff(lev_distance *distance) {
     da_append(rev_lev_track, current_char_distance);
   } while (1);
   da_revert(rev_lev_track, lev_track);
+#ifdef LEV_TRACE
   display_dyn_lev_char_distance(lev_track);
+#endif
   return lev_track;
 }
 
@@ -250,5 +257,6 @@ void display_diff(str_diff *d) {
     }
     printf("%c ", d->items[i].to);
   }
+  printf("\n");
   printf("\n");
 }
