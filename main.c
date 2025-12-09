@@ -4,55 +4,46 @@
 #include <stdlib.h>
 
 int main(int argc, char **argv) {
-  lev_distance *distance;
-  distance = lev("xy", "xyz");
-  printf("lev(xy, xyz)\n");
-  lev_trackdiff(distance);
-  free(distance);
+  str_diff *diff_result;
 
-  distance = lev("abc", "xy");
-  printf("lev(abc, xy)\n");
-  lev_trackdiff(distance);
-  free(distance);
+  diff_result = diff("xy", "xyz");
+  display_diff(diff_result);
+  free(diff_result);
 
-  distance = lev("", "abc");
-  printf("lev(, abc)\n");
-  lev_trackdiff(distance);
-  free(distance);
+  diff_result = diff("abc", "xy");
+  display_diff(diff_result);
+  free(diff_result);
 
-  distance = lev("abc", "c");
-  printf("lev(abc, c)\n");
-  lev_trackdiff(distance);
-  free(distance);
+  diff_result = diff("", "abc");
+  display_diff(diff_result);
+  free(diff_result);
 
-  distance = lev("abc", "abd");
-  printf("lev(abc, abd)\n");
-  lev_trackdiff(distance);
-  free(distance);
+  diff_result = diff("abc", "c");
+  display_diff(diff_result);
+  free(diff_result);
 
-  distance = lev("abcd", "abd");
-  printf("lev(abcd, abd)\n");
-  lev_trackdiff(distance);
-  free(distance);
+  diff_result = diff("abc", "abd");
+  display_diff(diff_result);
+  free(diff_result);
 
-  distance = lev("abcd", "abe");
-  printf("lev(abcd, abe)\n");
-  lev_trackdiff(distance);
-  free(distance);
+  diff_result = diff("abcd", "abd");
+  display_diff(diff_result);
+  free(diff_result);
 
-  distance = lev("apple", "appled");
-  printf("lev(apple, appled)\n");
-  lev_trackdiff(distance);
-  free(distance);
+  diff_result = diff("abcd", "abe");
+  display_diff(diff_result);
+  free(diff_result);
 
-  distance = lev("appled", "apple");
-  printf("lev(appled, apple)\n");
-  lev_trackdiff(distance);
-  free(distance);
+  diff_result = diff("apple", "appled");
+  display_diff(diff_result);
+  free(diff_result);
 
-  distance = lev("hello", "hallow");
-  printf("lev(hello, hallow)\n");
-  lev_trackdiff(distance);
-  free(distance);
+  diff_result = diff("cppled", "aapple");
+  display_diff(diff_result);
+  free(diff_result);
+
+  diff_result = diff("hello", "hallow");
+  display_diff(diff_result);
+  free(diff_result);
   return 0;
 }

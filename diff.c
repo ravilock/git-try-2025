@@ -132,7 +132,7 @@ lev_distance *lev(const char *a, const char *b) {
   return distances;
 }
 
-void lev_trackdiff(lev_distance *distance) {
+dyn_lev_char_distance *lev_trackdiff(lev_distance *distance) {
   dyn_lev_char_distance *lev_track = malloc(sizeof(dyn_lev_char_distance));
   if (lev_track == NULL) {
     printf("lev_track is NULL\n");
@@ -174,7 +174,81 @@ void lev_trackdiff(lev_distance *distance) {
     }
     da_append(rev_lev_track, current_char_distance);
   } while (1);
-  display_dyn_lev_char_distance(rev_lev_track);
   da_revert(rev_lev_track, lev_track);
   display_dyn_lev_char_distance(lev_track);
+  return lev_track;
+}
+
+str_diff *diff(const char *a, const char *b) {
+  lev_char_distance char_distance;
+  char_diff cdiff;
+  size_t a_len = strlen(a);
+  size_t b_len = strlen(b);
+  lev_distance *distance = lev(a, b);
+  dyn_lev_char_distance *lev_track = lev_trackdiff(distance);
+  str_diff *diff_result = malloc(sizeof(str_diff));
+  if (diff_result == NULL) {
+    printf("diff_result is NULL\n");
+    exit(69);
+  }
+  for (size_t i = 0; i < lev_track->count; i++) {
+    cdiff.action = lev_track->items[i].action;
+    switch (cdiff.action) {
+    case IGNORE:
+      cdiff.from = a[i];
+      cdiff.to = 0;
+      break;
+    case SUBSTITUTE:
+      cdiff.from = a[i];
+      cdiff.to = b[i];
+      break;
+    case REMOVE:
+      cdiff.from = a[i];
+      cdiff.to = 0;
+      break;
+    case ADD:
+      cdiff.from = 0;
+      cdiff.to = b[i];
+      break;
+    }
+    da_append(diff_result, cdiff);
+  }
+  return diff_result;
+}
+
+void display_diff(str_diff *d) {
+  printf("len - %zu\n", d->count);
+  for (size_t i = 0; i < d->count; i++) {
+    if (d->items[i].action == ADD) {
+      printf("  ");
+      continue;
+    }
+    printf("%c ", d->items[i].from);
+  }
+  printf("\n");
+  for (size_t i = 0; i < d->count; i++) {
+    switch (d->items[i].action) {
+    case IGNORE:
+      printf("  ");
+      break;
+    case SUBSTITUTE:
+      printf("~ ");
+      break;
+    case REMOVE:
+      printf("- ");
+      break;
+    case ADD:
+      printf("+ ");
+      break;
+    }
+  }
+  printf("\n");
+  for (size_t i = 0; i < d->count; i++) {
+    if (d->items[i].action == REMOVE || d->items[i].action == IGNORE) {
+      printf("  ");
+      continue;
+    }
+    printf("%c ", d->items[i].to);
+  }
+  printf("\n");
 }
