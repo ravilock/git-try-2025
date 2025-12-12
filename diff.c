@@ -183,35 +183,35 @@ void display_diff(str_diff *d) {
   printf("len - %zu\n", d->count);
   for (size_t i = 0; i < d->count; i++) {
     if (d->items[i].action == ADD) {
-      printf("  ");
+      printf(" ");
       continue;
     }
-    printf("%c ", d->items[i].from);
+    printf("%c", d->items[i].from);
   }
   printf("\n");
   for (size_t i = 0; i < d->count; i++) {
     switch (d->items[i].action) {
     case IGNORE:
-      printf("  ");
+      printf(" ");
       break;
     case SUBSTITUTE:
-      printf("~ ");
+      printf("~");
       break;
     case REMOVE:
-      printf("- ");
+      printf("-");
       break;
     case ADD:
-      printf("+ ");
+      printf("+");
       break;
     }
   }
   printf("\n");
   for (size_t i = 0; i < d->count; i++) {
     if (d->items[i].action == REMOVE || d->items[i].action == IGNORE) {
-      printf("  ");
+      printf(" ");
       continue;
     }
-    printf("%c ", d->items[i].to);
+    printf("%c", d->items[i].to);
   }
   printf("\n");
   printf("\n");
