@@ -40,3 +40,7 @@ The commands with `<pathspec>` should allow the user to pass `.` as an indicatio
 ### How is a commit stored
 
 ### How is a branch stored
+
+## Inspirations
+
+[Levenshtein Distance Calculator](https://phiresky.github.io/levenshtein-demo/)
